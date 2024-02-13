@@ -2,6 +2,13 @@ pipeline {
     agent any
     
     stages {
+        stage('Checkout') {
+            steps {
+                // Checkout code from GitHub repository
+                git 'https://github.com/santhoshbabu0411/springbootdemo.git'
+            }
+        }
+        
         stage('Check Maven') {
             steps {
                 script {
@@ -26,29 +33,10 @@ pipeline {
             }
         }
         
-        stage('Checkout') {
-            steps {
-                // Checkout the source code from Git
-                git url: 'https://github.com/santhoshbabu0411/springbootdemo.git'
-            }
-        }
-        
-        stage('Get Git ID') {
-            steps {
-                // Get the short Git commit ID
-                script {
-                    def get_id = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    env.GET_ID = get_id // Store the value in an environment variable
-                }
-            }
-        }
-        
         stage('Build') {
             steps {
                 // Build the project using Maven
-                withMaven(maven: 'Maven') {
-                    sh 'mvn clean install'
-                }
+                sh 'mvn clean install'
             }
         }
     }
