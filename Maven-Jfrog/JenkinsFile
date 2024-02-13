@@ -1,0 +1,38 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Check Maven') {
+            steps {
+                script {
+                    def mavenHome = tool 'Maven' // Try to get Maven tool from Jenkins installation
+                    if (mavenHome == null) {
+                        echo "Maven is not installed, installing now..."
+                        // Install Maven tool using the Maven installer tool name
+                        env.MAVEN_HOME = tool 'Maven'
+                        // Add Maven bin directory to PATH
+                        env.PATH += "${env.MAVEN_HOME}/bin"
+                    } else {
+                        echo "Maven is already installed at: $mavenHome"
+                        // Set MAVEN_HOME environment variable
+                        env.MAVEN_HOME = mavenHome
+                        // Add Maven bin directory to PATH if needed
+                        if (!env.PATH.contains("${env.MAVEN_HOME}/bin")) {
+                            env.PATH += "${env.MAVEN_HOME}/bin"
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                // Your build steps here
+                sh 'mvn clean install'
+                sh 'cp -r target/*.war target/*.jar /test/ || true'
+                def get_id = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                env.GET_ID = get_id // Store the value in an environment variable
+            }
+        }
+    }
+}
