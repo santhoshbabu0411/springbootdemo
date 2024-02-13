@@ -5,7 +5,8 @@ pipeline {
         stage('Check Maven') {
             steps {
                 script {
-                    def mavenHome = tool 'Maven' // Try to get Maven tool from Jenkins installation
+                    // Check if Maven is already installed
+                    def mavenHome = tool 'Maven'
                     if (mavenHome == null) {
                         echo "Maven is not installed, installing now..."
                         // Install Maven tool using the Maven installer tool name
@@ -25,14 +26,31 @@ pipeline {
             }
         }
         
+        stage('Checkout') {
+            steps {
+                // Checkout the source code from Git
+                git url: 'https://github.com/santhoshbabu0411/springbootdemo.git'
+            }
+        }
+        
+        stage('Get Git ID') {
+            steps {
+                // Get the short Git commit ID
+                script {
+                    def get_id = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.GET_ID = get_id // Store the value in an environment variable
+                }
+            }
+        }
+        
         stage('Build') {
             steps {
-                // Your build steps here
-                sh 'mvn clean install'
-                sh 'cp -r target/*.war target/*.jar /test/ || true'
-                def get_id = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                env.GET_ID = get_id // Store the value in an environment variable
+                // Build the project using Maven
+                withMaven(maven: 'Maven') {
+                    sh 'mvn clean install'
+                }
             }
         }
     }
 }
+
