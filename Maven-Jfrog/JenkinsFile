@@ -1,42 +1,32 @@
 pipeline {
     agent any
-    
+
     stages {
         stage('Checkout') {
             steps {
-                // Checkout code from GitHub repository
+                // Pull code from GitHub
                 git 'https://github.com/santhoshbabu0411/springbootdemo.git'
             }
         }
-        
-        stage('Check Maven') {
+        stage('Install Maven and Build') {
             steps {
+                // Check if Maven is already installed, if not, install it
                 script {
-                    // Check if Maven is already installed
-                    def mavenHome = tool 'Maven'
-                    if (mavenHome == null) {
-                        echo "Maven is not installed, installing now..."
-                        // Install Maven tool using the Maven installer tool name
-                        env.MAVEN_HOME = tool 'Maven'
-                        // Add Maven bin directory to PATH
-                        env.PATH += "${env.MAVEN_HOME}/bin"
+                    def mvnHome = tool name: 'Maven', type: 'maven', return: true
+                    if (!mvnHome) {
+                        echo 'Maven is not installed, installing now...'
+                        // Install Maven
+                        mvnHome = tool 'Maven'
                     } else {
-                        echo "Maven is already installed at: $mavenHome"
-                        // Set MAVEN_HOME environment variable
-                        env.MAVEN_HOME = mavenHome
-                        // Add Maven bin directory to PATH if needed
-                        if (!env.PATH.contains("${env.MAVEN_HOME}/bin")) {
-                            env.PATH += "${env.MAVEN_HOME}/bin"
-                        }
+                        echo "Maven is already installed at: ${mvnHome}"
                     }
                 }
-            }
-        }
-        
-        stage('Build') {
-            steps {
-                // Build the project using Maven
-                sh 'mvn clean install'
+                // Build with Maven
+                script {
+                    def mvnHome = tool 'Maven'
+                    def mvnCmd = "${mvnHome}/bin/mvn"
+                    sh "${mvnCmd} clean package" // Example Maven command
+                }
             }
         }
     }
