@@ -1,31 +1,46 @@
 pipeline {
     agent any
-
+    
     stages {
-        stage('Checkout') {
+        stage('Pull GitHub Code') {
             steps {
-                // Pull code from GitHub
+                // Checkout code from GitHub repository
                 git 'https://github.com/santhoshbabu0411/springbootdemo.git'
             }
         }
-        stage('Install Maven and Build') {
+        
+        stage('Check Maven Installation') {
             steps {
-                // Check if Maven is already installed, if not, install it
+                // Check if Maven is installed
                 script {
-                    def mvnHome = tool name: 'Maven', type: 'maven', return: true
-                    if (!mvnHome) {
-                        echo 'Maven is not installed, installing now...'
-                        // Install Maven
-                        mvnHome = tool 'Maven'
+                    def mavenHome = tool 'Maven'
+                    if (mavenHome == null) {
+                        // Maven is not installed, so install it
+                        echo 'Maven is not installed. Installing...'
+                        def mvnHome = sh(script: 'mvn --version | grep "Maven home"', returnStdout: true).trim()
+                        if (mvnHome) {
+                            // Maven is found, set it up in Jenkins tool configuration
+                            tool name: 'Maven', type: 'maven', installers: [
+                                [installer: 'Apache Maven', id: 'apache-maven-3.8.4']
+                            ]
+                        } else {
+                            // Maven is not found, exit the pipeline with failure
+                            error 'Maven installation failed. Exiting pipeline.'
+                        }
                     } else {
-                        echo "Maven is already installed at: ${mvnHome}"
+                        // Maven is already installed
+                        echo "Maven is installed at $mavenHome"
                     }
                 }
-                // Build with Maven
+            }
+        }
+        
+        stage('Build and Package') {
+            steps {
+                // Build the Java application using Maven
                 script {
-                    def mvnHome = tool 'Maven'
-                    def mvnCmd = "${mvnHome}/bin/mvn"
-                    sh "${mvnCmd} clean package" // Example Maven command
+                    def mavenHome = tool 'Maven'
+                    sh "${mavenHome}/bin/mvn clean package"
                 }
             }
         }
